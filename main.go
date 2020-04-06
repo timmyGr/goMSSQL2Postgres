@@ -28,7 +28,10 @@ func main() {
 			SchemaName = c.table_schema,
 			TableName = c.table_name,
 			ColumnName = c.column_name,
-			DataType = data_type
+			DataType = data_type,
+			IsNullable = c.is_nullable,
+			CharacterMaxLength = c.character_maximum_length,
+			NumericPrecision = c.numeric_precision
 		FROM
 			information_schema.columns c
 			INNER JOIN information_schema.tables t ON c.table_name = t.table_name
@@ -40,23 +43,30 @@ func main() {
 			ordinal_position
 	`
 	rows, err := db.Query(sqlString)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer rows.Close()
 
 	var (
-		schemaName string
-		tableName  string
-		columnName string
-		dataType   string
+		schemaName         string
+		tableName          string
+		columnName         string
+		dataType           string
+		isNullable         sql.NullString
+		characterMaxLength sql.NullInt64
+		numericPrecision   sql.NullInt64
 	)
 
 	schemaMap := map[string][]msSQLColumns{}
 
 	for rows.Next() {
-		err := rows.Scan(&schemaName, &tableName, &columnName, &dataType)
+		err := rows.Scan(&schemaName, &tableName, &columnName, &dataType, &isNullable, &characterMaxLength, &numericPrecision)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(tableName, columnName, dataType)
+
+		fmt.Println(tableName, columnName, dataType, isNullable, characterMaxLength, numericPrecision)
 
 		schemaMap[tableName] = append(schemaMap[tableName], msSQLColumns{columnName, dataType})
 	}
